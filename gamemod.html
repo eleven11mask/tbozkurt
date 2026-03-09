@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>T-BOZKURT ONLINE PRO</title>
+    <style>
+        body { margin: 0; background: #020617; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: manipulation; }
+        canvas { display: block; transition: filter 0.3s; }
+        
+        /* UI Tasarımı */
+        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #score-box { position: absolute; top: 20px; width: 100%; text-align: center; font-size: 60px; font-weight: 900; text-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+        
+        /* Butonlar */
+        .btn { padding: 12px 24px; background: #3b82f6; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; pointer-events: auto; transition: 0.2s; }
+        .btn:hover { background: #2563eb; transform: scale(1.05); }
+        
+        #pause-btn { position: absolute; top: 20px; left: 20px; font-size: 14px; background: rgba(59, 130, 246, 0.3); border: 1px solid #3b82f6; }
+        
+        #menu-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto; z-index: 100; }
+        #menu-overlay h1 { font-size: 40px; color: #60a5fa; margin-bottom: 20px; text-shadow: 0 0 15px #3b82f6; }
+
+        #leaderboard { position: absolute; right: 15px; top: 15px; background: rgba(15, 23, 42, 0.9); padding: 15px; border-radius: 12px; width: 180px; border: 1px solid #3b82f6; font-size: 12px; pointer-events: auto; }
+        .top-score { color: #fbbf24; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="ui-container">
+    <div id="score-box">0</div>
+    <button id="pause-btn" class="btn" onclick="togglePause()">DURAKLAT (P)</button>
+    
+    <div id="leaderboard">
+        <h4 style="margin:0 0 10px 0; text-align:center; color:#60a5fa;">🏆 LİDERLER</h4>
+        <div id="scores">Yükleniyor...</div>
+    </div>
+</div>
+
+<div id="menu-overlay">
+    <h1 id="menu-title">T-BOZKURT ONLINE</h1>
+    <button class="btn" style="font-size: 24px;" onclick="startGame()">OYUNU BAŞLAT</button>
+    <p id="high-score-display" style="margin-top: 20px; color: #94a3b8;"></p>
+</div>
+
+<canvas id="game"></canvas>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDJ0LSQIv5KDPC-tJwDHdeN6nmzk2JcflM",
+    authDomain: "kaangame-bfea0.firebaseapp.com",
+    databaseURL: "https://kaangame-bfea0-default-rtdb.firebaseio.com",
+    projectId: "kaangame-bfea0",
+    storageBucket: "kaangame-bfea0.firebasestorage.app",
+    messagingSenderId: "889267308539",
+    appId: "1:889267308539:web:4afa1e9705647b0445ad5e"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let oyuncuAdi = "";
+
+// Oyun Durumları
+let gameState = "MENU"; // MENU, PLAYING, PAUSED, GAMEOVER
+let score = 0;
+let highScore = localStorage.getItem("tbozkurt_hi") || 0;
+let obstacles = [];
+let particles = [];
+let trail = [];
+let frame = 0;
+let speed = 5;
+let shakeTime = 0;
+
+const player = { x: 80, y: 0, vy: 0, gravity: 0.55, jump: -8.5, size: 32, angle: 0 };
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    if(gameState === "MENU") player.y = canvas.height / 2;
+}
+window.onresize = resize;
+resize();
+
+function startGame() {
+    if(gameState === "PLAYING") return;
+    if(!oyuncuAdi) {
+        oyuncuAdi = prompt("Adını gir:", "Bozkurt");
+        if(!oyuncuAdi) oyuncuAdi = "Oyuncu";
+    }
+    
+    document.getElementById("menu-overlay").style.display = "none";
+    gameState = "PLAYING";
+    score = 0;
+    speed = 5;
+    obstacles = [];
+    particles = [];
+    trail = [];
+    player.y = canvas.height / 2;
+    player.vy = 0;
+    document.getElementById("score-box").innerText = "0";
+}
+
+function togglePause() {
+    if(gameState === "PLAYING") {
+        gameState = "PAUSED";
+        document.getElementById("menu-overlay").style.display = "flex";
+        document.getElementById("menu-title").innerText = "DURAKLATILDI";
+    } else if(gameState === "PAUSED") {
+        gameState = "PLAYING";
+        document.getElementById("menu-overlay").style.display = "none";
+    }
+}
+
+function createExplosion(x, y) {
+    for(let i=0; i<15; i++) {
+        particles.push({
+            x: x, y: y,
+            vx: (Math.random()-0.5)*10,
+            vy: (Math.random()-0.5)*10,
+            size: Math.random()*5+2,
+            life: 1
+        });
+    }
+}
+
+function gameOver() {
+    gameState = "GAMEOVER";
+    shakeTime = 15;
+    createExplosion(player.x, player.y);
+    
+    db.ref("games").push({ name: oyuncuAdi, score: score, timestamp: Date.now() });
+    
+    if(score > highScore) {
+        highScore = score;
+        localStorage.setItem("tbozkurt_hi", highScore);
+    }
+
+    setTimeout(() => {
+        document.getElementById("menu-overlay").style.display = "flex";
+        document.getElementById("menu-title").innerText = "OYUN BİTTİ!";
+        document.getElementById("high-score-display").innerText = "Kişisel Rekorun: " + highScore;
+        gameState = "MENU";
+    }, 1000);
+}
+
+function loop() {
+    if(gameState === "PAUSED") {
+        requestAnimationFrame(loop);
+        return;
+    }
+
+    // Ekran Sarsılması
+    ctx.save();
+    if(shakeTime > 0) {
+        ctx.translate(Math.random()*5-2.5, Math.random()*5-2.5);
+        shakeTime--;
+    }
+
+    // Dinamik Arka Plan (Gece/Gündüz)
+    let bgHue = 220 + Math.min(score, 50);
+    ctx.fillStyle = `hsl(${bgHue}, 40%, 5%)`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if(gameState === "PLAYING" || gameState === "GAMEOVER") {
+        if(gameState === "PLAYING") {
+            player.vy += player.gravity;
+            player.y += player.vy;
+            player.angle = Math.min(Math.PI/4, Math.max(-Math.PI/4, player.vy * 0.05));
+
+            // Trail (İz)
+            trail.push({x: player.x, y: player.y, alpha: 1});
+            if(trail.length > 10) trail.shift();
+        }
+
+        // İzleri Çiz
+        trail.forEach((t, i) => {
+            t.alpha -= 0.1;
+            ctx.fillStyle = `rgba(59, 130, 246, ${t.alpha * 0.3})`;
+            ctx.fillRect(t.x, t.y, player.size, player.size);
+        });
+
+        // Borular
+        if(frame % 90 === 0 && gameState === "PLAYING") {
+            let gap = Math.max(160, 200 - score); // Zorlaşan aralık
+            let h = Math.random() * (canvas.height - gap - 100) + 50;
+            obstacles.push({ x: canvas.width, y: 0, w: 70, h: h, type: 'top', passed: false });
+            obstacles.push({ x: canvas.width, y: h + gap, w: 70, h: canvas.height, type: 'bottom' });
+        }
+        frame++;
+
+        for(let i = obstacles.length - 1; i >= 0; i--) {
+            let o = obstacles[i];
+            if(gameState === "PLAYING") o.x -= speed;
+
+            ctx.fillStyle = "#1e293b";
+            ctx.strokeStyle = "#3b82f6";
+            ctx.lineWidth = 3;
+            ctx.fillRect(o.x, o.y, o.w, o.h);
+            ctx.strokeRect(o.x, o.y, o.w, o.h);
+
+            if(gameState === "PLAYING" && 
+               player.x < o.x + o.w && player.x + player.size > o.x && 
+               player.y < o.y + o.h && player.y + player.size > o.y) {
+                gameOver();
+            }
+
+            if(o.type === 'top' && !o.passed && o.x + o.w < player.x) {
+                score++;
+                o.passed = true;
+                speed += 0.1;
+                document.getElementById("score-box").innerText = score;
+            }
+            if(o.x < -100) obstacles.splice(i, 1);
+        }
+
+        // Parçacıklar
+        particles.forEach((p, i) => {
+            p.x += p.vx; p.y += p.vy; p.life -= 0.02;
+            ctx.fillStyle = `rgba(59, 130, 246, ${p.life})`;
+            ctx.fillRect(p.x, p.y, p.size, p.size);
+            if(p.life <= 0) particles.splice(i, 1);
+        });
+
+        // Karakter Çizimi
+        if(gameState !== "GAMEOVER") {
+            ctx.save();
+            ctx.translate(player.x + player.size/2, player.y + player.size/2);
+            ctx.rotate(player.angle);
+            ctx.fillStyle = "#3b82f6";
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "#3b82f6";
+            ctx.fillRect(-player.size/2, -player.size/2, player.size, player.size);
+            ctx.restore();
+        }
+
+        if(player.y + player.size > canvas.height || player.y < 0) {
+            if(gameState === "PLAYING") gameOver();
+        }
+    }
+
+    ctx.restore();
+    requestAnimationFrame(loop);
+}
+
+// Kontroller
+const handleJump = (e) => {
+    if(e.type === 'touchstart') e.preventDefault();
+    if(gameState === "PLAYING") player.vy = player.jump;
+};
+window.addEventListener("touchstart", handleJump, {passive: false});
+window.addEventListener("mousedown", handleJump);
+window.addEventListener("keydown", (e) => {
+    if(e.code === "Space") handleJump(e);
+    if(e.code === "KeyP") togglePause();
+});
+
+function loadLeaderboard() {
+    db.ref("games").orderByChild("score").limitToLast(10).on("value", snap => {
+        let data = snap.val(), arr = [];
+        for(let k in data) arr.push(data[k]);
+        arr.sort((a, b) => b.score - a.score);
+        let html = "";
+        arr.forEach((s, i) => {
+            let cls = (i === 0) ? "class='top-score'" : "";
+            html += `<div ${cls}>${i + 1}. ${s.name.substring(0,8)} - ${s.score}</div>`;
+        });
+        document.getElementById("scores").innerHTML = html || "Skor yok";
+    });
+}
+
+loadLeaderboard();
+loop();
+</script>
+</body>
+</html>
