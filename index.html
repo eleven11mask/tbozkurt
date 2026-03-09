@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>T-BOZKURT ONLINE</title>
+    <style>
+        body { margin: 0; background: #020617; color: white; font-family: sans-serif; overflow: hidden; touch-action: manipulation; }
+        canvas { display: block; }
+        
+        /* Mobil Arayüz Düzenlemeleri */
+        #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #score-box { position: absolute; top: 10%; width: 100%; text-align: center; font-size: clamp(40px, 10vw, 60px); font-weight: 900; text-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+        
+        #leaderboard { position: absolute; right: 10px; top: 10px; background: rgba(15, 23, 42, 0.85); padding: 10px; border-radius: 8px; width: 130px; border: 1px solid #3b82f6; font-size: 11px; pointer-events: none; }
+        .top-score { color: #fbbf24; font-weight: bold; }
+
+        #menu-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto; z-index: 100; text-align: center; }
+        .btn { padding: 15px 40px; background: #3b82f6; border: none; border-radius: 50px; color: white; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+    </style>
+</head>
+<body>
+
+<div id="ui-container">
+    <div id="score-box">0</div>
+    <div id="leaderboard">
+        <div style="text-align:center; color:#60a5fa; margin-bottom:5px; font-weight:bold;">🏆 TOP 10</div>
+        <div id="scores">Yükleniyor...</div>
+    </div>
+</div>
+
+<div id="menu-overlay" id="startMenu">
+    <h1 style="color:#60a5fa; font-size: 28px; margin-bottom: 5px;">T-BOZKURT</h1>
+    <p id="welcomeText" style="margin-bottom: 20px; color: #94a3b8;"></p>
+    <button class="btn" onclick="startGame()">BAŞLAT</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+const firebaseConfig = {
+    apiKey: "AIzaSyDJ0LSQIv5KDPC-tJwDHdeN6nmzk2JcflM",
+    authDomain: "kaangame-bfea0.firebaseapp.com",
+    databaseURL: "https://kaangame-bfea0-default-rtdb.firebaseio.com",
+    projectId: "kaangame-bfea0",
+    storageBucket: "kaangame-bfea0.firebasestorage.app",
+    messagingSenderId: "889267308539",
+    appId: "1:889267308539:web:4afa1e9705647b0445ad5e"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// --- OTURUM YÖNETİMİ ---
+let oyuncuAdi = localStorage.getItem("bozkurt_user");
+if(!oyuncuAdi) {
+    oyuncuAdi = prompt("Yarışmaya katılmak için bir lakap gir:");
+    if(!oyuncuAdi) oyuncuAdi = "Oyuncu" + Math.floor(Math.random()*999);
+    localStorage.setItem("bozkurt_user", oyuncuAdi);
+}
+document.getElementById("welcomeText").innerText = "Hoş geldin, " + oyuncuAdi;
+
+// --- OYUN AYARLARI ---
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+let gameState = "MENU", score = 0, obstacles = [], frame = 0, speed = 4.5, playing = false;
+
+const player = { x: 50, y: 0, vy: 0, gravity: 0.5, jump: -7.5, size: 30 };
+
+function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    player.y = canvas.height / 2;
+}
+window.onresize = resize;
+resize();
+
+function startGame() {
+    document.getElementById("menu-overlay").style.display = "none";
+    gameState = "PLAYING";
+    score = 0;
+    speed = 4.5;
+    obstacles = [];
+    player.y = canvas.height / 2;
+    player.vy = 0;
+    document.getElementById("score-box").innerText = "0";
+}
+
+function gameOver() {
+    gameState = "MENU";
+    db.ref("games").push({ name: oyuncuAdi, score: score, t: Date.now() });
+    document.getElementById("menu-overlay").style.display = "flex";
+    document.getElementById("welcomeText").innerText = "Skorun: " + score + "\nTekrar denemeye ne dersin?";
+}
+
+function loop() {
+    ctx.fillStyle = "#020617";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if(gameState === "PLAYING") {
+        player.vy += player.gravity;
+        player.y += player.vy;
+
+        if(player.y + player.size > canvas.height || player.y < 0) gameOver();
+
+        if(frame % 100 === 0) {
+            let gap = 180;
+            let h = Math.random() * (canvas.height - gap - 100) + 50;
+            obstacles.push({ x: canvas.width, y: 0, w: 60, h: h, passed: false });
+            obstacles.push({ x: canvas.width, y: h + gap, w: 60, h: canvas.height });
+        }
+        frame++;
+
+        for(let i = obstacles.length - 1; i >= 0; i--) {
+            let o = obstacles[i];
+            o.x -= speed;
+
+            ctx.fillStyle = "#1e293b";
+            ctx.fillRect(o.x, o.y, o.w, o.h);
+
+            // Çarpışma
+            if(player.x < o.x + o.w && player.x + player.size > o.x && player.y < o.y + o.h && player.y + player.size > o.y) gameOver();
+
+            // Skor
+            if(o.y === 0 && !o.passed && o.x + o.w < player.x) {
+                score++;
+                o.passed = true;
+                speed += 0.05;
+                document.getElementById("score-box").innerText = score;
+            }
+            if(o.x < -70) obstacles.splice(i, 1);
+        }
+    }
+
+    // Karakter
+    ctx.fillStyle = "#3b82f6";
+    ctx.fillRect(player.x, player.y, player.size, player.size);
+    
+    requestAnimationFrame(loop);
+}
+
+// Mobil dokunma desteği
+const jump = (e) => { 
+    if(e.type === 'touchstart') e.preventDefault();
+    if(gameState === "PLAYING") player.vy = player.jump; 
+};
+window.addEventListener("mousedown", jump);
+window.addEventListener("touchstart", jump, {passive: false});
+
+function loadLeaderboard() {
+    db.ref("games").orderByChild("score").limitToLast(10).on("value", snap => {
+        let data = snap.val(), arr = [];
+        for(let k in data) arr.push(data[k]);
+        arr.sort((a, b) => b.score - a.score);
+        let html = "";
+        arr.forEach((s, i) => {
+            html += `<div ${i===0?'class="top-score"':''}>${i+1}. ${s.name.slice(0,7)}: ${s.score}</div>`;
+        });
+        document.getElementById("scores").innerHTML = html || "Skor yok";
+    });
+}
+
+loadLeaderboard();
+loop();
+</script>
+</body>
+</html>
