@@ -3,35 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>T-BOZKURT: UNIVERSE</title>
+    <title>T-BOZKURT: OMNI-VERSE</title>
     <style>
-        :root { --p-color: #3b82f6; --bg-main: #020617; }
-        body { margin: 0; background: var(--bg-main); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: manipulation; }
+        :root { --p-color: #3b82f6; --neon: #00f2ff; }
+        body { margin: 0; background: #020617; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
         canvas { display: block; }
         
-        /* UI Katmanları */
+        /* UI ELEMENTLERI */
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         #stats { position: absolute; top: 15px; width: 100%; display: flex; justify-content: space-around; font-size: 14px; font-weight: 900; }
-        .stat-item { padding: 8px 12px; background: rgba(15, 23, 42, 0.9); border-radius: 15px; border: 1px solid var(--p-color); box-shadow: 0 0 10px var(--p-color); }
+        .stat-item { padding: 8px 12px; background: rgba(15, 23, 42, 0.9); border-radius: 15px; border: 1px solid var(--p-color); box-shadow: 0 0 15px var(--p-color); }
         
-        /* Market ve Menü Paneli */
-        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.95); display: flex; flex-direction: column; align-items: center; z-index: 100; pointer-events: auto; overflow-y: auto; padding-top: 40px; }
-        .wallet-info { font-size: 24px; color: #fbbf24; font-weight: bold; margin-bottom: 20px; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.98); display: flex; flex-direction: column; align-items: center; z-index: 100; pointer-events: auto; padding-top: 30px; overflow-y: auto; }
+        .wallet { font-size: 28px; color: #fbbf24; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 10px #fbbf24; }
         
-        .mode-container { display: flex; gap: 15px; margin-bottom: 30px; }
-        .mode-card { width: 140px; padding: 20px; background: #1e293b; border: 2px solid #334155; border-radius: 15px; cursor: pointer; text-align: center; transition: 0.3s; }
-        .mode-card.active { border-color: #3b82f6; box-shadow: 0 0 20px #3b82f6; background: #0f172a; }
+        .mode-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .mode-box { width: 120px; padding: 15px; background: #1e293b; border: 2px solid #334155; border-radius: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .mode-box.active { border-color: var(--neon); box-shadow: 0 0 20px var(--neon); background: #0f172a; }
 
-        .market-section { width: 90%; max-width: 400px; background: rgba(30, 41, 59, 0.5); padding: 15px; border-radius: 20px; margin-bottom: 20px; }
-        .market-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #334155; }
-        .buy-btn { background: #10b981; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
-        .buy-btn.owned { background: #475569; cursor: default; }
+        .market-grid { width: 90%; max-width: 400px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .item-card { background: #0f172a; border: 1px solid #334155; padding: 10px; border-radius: 15px; text-align: center; }
+        .buy-btn { width: 100%; margin-top: 8px; padding: 8px; border: none; border-radius: 10px; background: #3b82f6; color: white; font-weight: bold; cursor: pointer; }
+        .buy-btn.owned { background: #475569; }
 
-        .btn-start { padding: 15px 60px; background: #3b82f6; border: none; border-radius: 50px; color: white; font-size: 24px; font-weight: 900; cursor: pointer; margin: 20px 0; }
+        #leaderboard { width: 90%; max-width: 400px; background: rgba(30, 41, 59, 0.5); border-radius: 20px; padding: 15px; font-size: 12px; margin-bottom: 50px; }
         
-        /* Yetenek Barı */
-        #ability-bar-container { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); width: 200px; height: 15px; background: rgba(255,255,255,0.1); border-radius: 10px; border: 1px solid #334155; overflow: hidden; }
-        #ability-bar { width: 0%; height: 100%; background: #3b82f6; transition: 0.3s; }
+        .btn-play { padding: 18px 80px; background: linear-gradient(45deg, #1e40af, #3b82f6); border: none; border-radius: 50px; color: white; font-size: 24px; font-weight: 900; cursor: pointer; box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
+        
+        #ability-bar-container { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 220px; height: 18px; background: rgba(255,255,255,0.1); border-radius: 10px; border: 2px solid #334155; overflow: hidden; pointer-events: auto; }
+        #ability-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #1e40af, var(--neon)); transition: 0.3s; box-shadow: 0 0 10px var(--neon); }
     </style>
 </head>
 <body>
@@ -42,44 +42,31 @@
         <div class="stat-item" style="border-color:#fbbf24;">💰 <span id="curCoins">0</span></div>
         <div class="stat-item" style="border-color:#ef4444;">❤️ <span id="curLives">2</span></div>
     </div>
-    <div id="ability-bar-container"><div id="ability-bar"></div></div>
+    <div id="ability-bar-container" onclick="activateWolf()"><div id="ability-bar"></div></div>
 </div>
 
 <div id="overlay">
-    <h1 style="color:white; margin:0;">T-BOZKURT</h1>
-    <div class="wallet-info">💰 <span id="totalWallet">0</span></div>
+    <h1 style="margin:0; letter-spacing:3px; color:var(--neon); text-shadow:0 0 15px var(--neon);">T-BOZKURT</h1>
+    <div class="wallet">💰 <span id="totalWallet">0</span></div>
 
-    <div class="mode-container">
-        <div class="mode-card active" id="modeClassic">
-            <div style="font-size:30px;">🐺</div>
-            <div style="font-weight:bold; margin-top:10px;">KLASİK</div>
-            <div style="font-size:10px; color:#94a3b8;">Boru Geçişi & Can</div>
-        </div>
-        <div class="mode-card" id="modeRain">
-            <div style="font-size:30px;">🌧️</div>
-            <div style="font-weight:bold; margin-top:10px;">YAĞMUR</div>
-            <div style="font-size:10px; color:#94a3b8;">Coin & Bomba</div>
-        </div>
+    <div class="mode-row">
+        <div class="mode-box active" id="mClassic" onclick="setMode('CLASSIC')">🐺<br>KLASİK</div>
+        <div class="mode-box" id="mRain" onclick="setMode('RAIN')">🌧️<br>YAĞMUR</div>
     </div>
 
-    <div class="market-section">
-        <div style="text-align:center; font-weight:bold; color:#3b82f6; margin-bottom:10px;">MARKET</div>
-        <div class="market-item">
-            <span>🌲 Orman Teması</span>
-            <button class="buy-btn" id="buyForest" onclick="buyItem('forest', 150)">150 💰</button>
-        </div>
-        <div class="market-item">
-            <span>🚀 Uzay Teması</span>
-            <button class="buy-btn" id="buySpace" onclick="buyItem('space', 300)">300 💰</button>
-        </div>
-        <div class="market-item">
-            <span>🦅 Kartal Karakteri</span>
-            <button class="buy-btn" id="buyEagle" onclick="buyItem('eagle', 500)">500 💰</button>
-        </div>
+    <div class="market-grid">
+        <div class="item-card">🌲 Orman<button class="buy-btn" id="btn_forest" onclick="shop('forest', 200)">200</button></div>
+        <div class="item-card">🚀 Uzay<button class="buy-btn" id="btn_space" onclick="shop('space', 400)">400</button></div>
+        <div class="item-card">🦅 Kartal<button class="buy-btn" id="btn_eagle" onclick="shop('eagle', 600)">600</button></div>
+        <div class="item-card">🐉 Ejderha<button class="buy-btn" id="btn_dragon" onclick="shop('dragon', 1000)">1000</button></div>
     </div>
 
-    <button class="btn-start" onclick="launchGame()">SAVAŞI BAŞLAT</button>
-    <div style="font-size:11px; color:#60a5fa; cursor:pointer;" onclick="changeName()">⚙️ İsim Değiştir</div>
+    <button class="btn-play" onclick="start()">BAŞLAT</button>
+    
+    <div id="leaderboard">
+        <div style="text-align:center; color:var(--neon); margin-bottom:10px; font-weight:bold;">LİDERLİK TABLOSU</div>
+        <div id="lb_content">Yükleniyor...</div>
+    </div>
 </div>
 
 <canvas id="game"></canvas>
@@ -88,61 +75,54 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-// Firebase Konfigürasyonu
+// FIREBASE
 const firebaseConfig = { apiKey: "AIzaSyDJ0LSQIv5KDPC-tJwDHdeN6nmzk2JcflM", authDomain: "kaangame-bfea0.firebaseapp.com", databaseURL: "https://kaangame-bfea0-default-rtdb.firebaseio.com", projectId: "kaangame-bfea0", storageBucket: "kaangame-bfea0.firebasestorage.app", messagingSenderId: "889267308539", appId: "1:889267308539:web:4afa1e9705647b0445ad5e" };
 firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-// Değişkenler
-let myName = localStorage.getItem("tb_name") || "Oyuncu";
-let myWallet = parseInt(localStorage.getItem("tb_wallet") || "0");
-let myItems = JSON.parse(localStorage.getItem("tb_items") || '{"forest":false, "space":false, "eagle":false}');
-let currentTheme = "default";
-let selectedMode = "CLASSIC";
+// DATA
+let myWallet = parseInt(localStorage.getItem("tb_coins") || "0");
+let myItems = JSON.parse(localStorage.getItem("tb_owned") || '{"forest":false, "space":false, "eagle":false, "dragon":false}');
+let activeTheme = localStorage.getItem("tb_theme") || "default";
+let activeEmoji = localStorage.getItem("tb_emoji") || "🐺";
+let activeMode = "CLASSIC";
+let playerName = localStorage.getItem("tb_player") || "Bozkurt_" + Math.floor(Math.random()*999);
 
 const canvas = document.getElementById("game"); const ctx = canvas.getContext("2d");
-let gameState = "MENU", score = 0, coins = 0, lives = 2, frame = 0, invul = 0, collectedOrbs = 0, isWolf = 0;
-let obstacles = [], rainItems = [], orbs = [];
-const player = { x: 70, y: 0, vy: 0, gravity: 0.52, jump: -8.2, size: 35, emoji: "🐺" };
+let gameState = "MENU", score = 0, coins = 0, lives = 2, frame = 0, invul = 0, blueOrbs = 0, isWolf = 0;
+let obstacles = [], rains = [], fx = [];
+const player = { x: 70, y: 0, vy: 0, gravity: 0.52, jump: -8.2, size: 38 };
 
-function updateMenu() {
+function setMode(m) { activeMode = m; document.getElementById("mClassic").className = m==='CLASSIC'?'mode-box active':'mode-box'; document.getElementById("mRain").className = m==='RAIN'?'mode-box active':'mode-box'; }
+
+function shop(id, price) {
+    if(myItems[id]) { 
+        if(id === 'eagle') activeEmoji = "🦅"; 
+        else if(id === 'dragon') activeEmoji = "🐉";
+        else activeTheme = id;
+        localStorage.setItem("tb_theme", activeTheme); localStorage.setItem("tb_emoji", activeEmoji);
+        refreshUI(); return; 
+    }
+    if(myWallet >= price) {
+        myWallet -= price; myItems[id] = true;
+        localStorage.setItem("tb_coins", myWallet); localStorage.setItem("tb_owned", JSON.stringify(myItems));
+        refreshUI();
+    }
+}
+
+function refreshUI() {
     document.getElementById("totalWallet").innerText = myWallet;
-    document.getElementById("buyForest").innerText = myItems.forest ? "SEÇ" : "150 💰";
-    document.getElementById("buySpace").innerText = myItems.space ? "SEÇ" : "300 💰";
-    document.getElementById("buyEagle").innerText = myItems.eagle ? "SEÇ" : "500 💰";
+    ["forest", "space", "eagle", "dragon"].forEach(id => {
+        const b = document.getElementById("btn_"+id);
+        if(myItems[id]) { b.innerText = (activeTheme===id || (id==='eagle'&&activeEmoji==='🦅') || (id==='dragon'&&activeEmoji==='🐉')) ? "SEÇİLİ" : "SEÇ"; b.className="buy-btn owned"; }
+    });
 }
-updateMenu();
+refreshUI();
 
-// Market Fonksiyonu
-function buyItem(item, price) {
-    if (myItems[item]) {
-        currentTheme = item;
-        if(item === 'eagle') player.emoji = "🦅";
-        alert(item.toUpperCase() + " seçildi!");
-        return;
-    }
-    if (myWallet >= price) {
-        myWallet -= price;
-        myItems[item] = true;
-        localStorage.setItem("tb_wallet", myWallet);
-        localStorage.setItem("tb_items", JSON.stringify(myItems));
-        updateMenu();
-    } else {
-        alert("Yeterli coin yok!");
-    }
-}
-
-// Mod Seçimi
-document.getElementById("modeClassic").onclick = () => { selectedMode = "CLASSIC"; document.getElementById("modeClassic").classList.add("active"); document.getElementById("modeRain").classList.remove("active"); };
-document.getElementById("modeRain").onclick = () => { selectedMode = "RAIN"; document.getElementById("modeRain").classList.add("active"); document.getElementById("modeClassic").classList.remove("active"); };
-
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-window.onresize = resize; resize();
-
-function launchGame() {
+function start() {
     document.getElementById("overlay").style.display = "none";
-    gameState = "PLAYING"; score = 0; coins = 0; frame = 0; invul = 0; collectedOrbs = 0; isWolf = 0;
-    lives = 2; player.y = canvas.height/2; player.vy = 0;
-    obstacles = []; rainItems = []; orbs = [];
+    gameState = "PLAYING"; score = 0; coins = 0; lives = 2; frame = 0; invul = 0; blueOrbs = 0; isWolf = 0;
+    obstacles = []; rains = []; player.y = canvas.height/2; player.vy = 0;
+    if(activeMode === "RAIN") player.y = canvas.height - 80;
     updateStats();
 }
 
@@ -150,114 +130,122 @@ function updateStats() {
     document.getElementById("curScore").innerText = score;
     document.getElementById("curCoins").innerText = coins;
     document.getElementById("curLives").innerText = lives;
-    document.getElementById("ability-bar").style.width = (collectedOrbs / 3 * 100) + "%";
+    document.getElementById("ability-bar").style.width = (blueOrbs / 3 * 100) + "%";
 }
 
-function handleDeath() {
-    if (invul > 0 || isWolf > 0) return;
+function hit() {
+    if(invul > 0 || isWolf > 0) return;
     lives--; invul = 120; updateStats();
-    if (lives <= 0) {
-        gameState = "MENU";
-        myWallet += coins;
-        localStorage.setItem("tb_wallet", myWallet);
-        db.ref("leaderboard/"+myName).set({name: myName, score: score});
-        document.getElementById("overlay").style.display = "flex";
-        updateMenu();
+    if(lives <= 0) {
+        gameState = "MENU"; myWallet += coins; localStorage.setItem("tb_coins", myWallet);
+        db.ref("leaderboard/"+playerName).set({name: playerName, score: score});
+        document.getElementById("overlay").style.display = "flex"; refreshUI();
     }
 }
 
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Tema Arka Planları
-    if(currentTheme === "forest") ctx.fillStyle = "#064e3b";
-    else if(currentTheme === "space") ctx.fillStyle = "#0f172a";
-    else ctx.fillStyle = "#020617";
+    // THEME BG
+    if(activeTheme === "forest") ctx.fillStyle = "#064e3b";
+    else if(activeTheme === "space") ctx.fillStyle = "#020617";
+    else ctx.fillStyle = "#010409";
     ctx.fillRect(0,0,canvas.width, canvas.height);
 
-    if (gameState === "PLAYING") {
-        let speed = 5 + (score / 10);
-        player.vy += player.gravity; player.y += player.vy;
-        if(invul > 0) invul--; if(isWolf > 0) isWolf--;
-
-        if (player.y + player.size > canvas.height || player.y < 0) {
-            if(invul === 0) handleDeath();
-            player.y = player.y < 0 ? 0 : canvas.height - player.size;
-            player.vy = 0;
-        }
-
-        // --- KLASİK MOD MANTIĞI ---
-        if (selectedMode === "CLASSIC") {
-            if (frame % 90 === 0) {
+    if(gameState === "PLAYING") {
+        let speed = 5 + (score / 15);
+        
+        if(activeMode === "CLASSIC") {
+            player.vy += player.gravity; player.y += player.vy;
+            if(player.y + player.size > canvas.height || player.y < 0) { if(invul===0) hit(); player.y = player.y < 0 ? 0 : canvas.height - player.size; player.vy = 0; }
+            
+            if(frame % 90 === 0) {
                 let gap = 190; let h = Math.random() * (canvas.height - gap - 100) + 50;
-                obstacles.push({x: canvas.width, y: 0, w: 70, h: h, p: false});
-                obstacles.push({x: canvas.width, y: h + gap, w: 70, h: canvas.height});
-                if(Math.random() > 0.7) orbs.push({x: canvas.width+100, y: h+(gap/2)});
+                obstacles.push({x: canvas.width, y: 0, w: 75, h: h, passed: false, type: "PIPE"});
+                obstacles.push({x: canvas.width, y: h + gap, w: 75, h: canvas.height, type: "PIPE"});
+                if(Math.random() > 0.7) obstacles.push({x: canvas.width + 110, y: h + (gap/2), type: "ORB"});
             }
-            obstacles.forEach((o, i) => {
-                o.x -= speed;
-                ctx.fillStyle = (isWolf > 0 || invul > 0) ? "rgba(59,130,246,0.3)" : "#1e293b";
-                ctx.strokeStyle = "#3b82f6"; ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.fillRect(o.x, o.y, o.w, o.h);
-                if (invul === 0 && isWolf === 0 && player.x < o.x + o.w && player.x + player.size > o.x && player.y < o.y + o.h && player.y + player.size > o.y) handleDeath();
-                if (o.y === 0 && !o.p && o.x + o.w < player.x) { score++; coins++; o.p = true; updateStats(); if(score%35===0) lives++; }
-            });
+        } else {
+            // RAIN MODE - Gravity off, follow touch/mouse
+            if(frame % 40 === 0) {
+                let r = Math.random();
+                rains.push({x: Math.random()*(canvas.width-40), y: -50, vy: 5+(score/10), kind: r<0.6 ? "💰" : (r<0.85 ? "💣" : "❤️")});
+            }
         }
 
-        // --- YAĞMUR MODU MANTIĞI ---
-        if (selectedMode === "RAIN") {
-            if (frame % 40 === 0) {
-                let type = Math.random();
-                let item = { x: Math.random() * (canvas.width - 30), y: -50, s: 5 };
-                if (type < 0.6) item.kind = "COIN";
-                else if (type < 0.9) item.kind = "BOMB";
-                else item.kind = "HEART";
-                rainItems.push(item);
+        // DRAW OBSTACLES (CLASSIC)
+        obstacles.forEach((o, i) => {
+            o.x -= speed;
+            if(o.type === "PIPE") {
+                ctx.fillStyle = (isWolf > 0 || invul > 0) ? "rgba(0, 242, 255, 0.2)" : "#1e293b";
+                ctx.strokeStyle = var(--neon); ctx.lineWidth = 3;
+                ctx.shadowBlur = 15; ctx.shadowColor = var(--neon);
+                ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.fillRect(o.x, o.y, o.w, o.h);
+                ctx.shadowBlur = 0;
+                if(invul === 0 && isWolf === 0 && player.x < o.x + o.w && player.x + player.size > o.x && player.y < o.y + o.h && player.y + player.size > o.y) hit();
+                if(o.y === 0 && !o.passed && o.x + o.w < player.x) { score++; coins++; o.passed = true; updateStats(); if(score%35===0) lives++; }
+            } else {
+                ctx.font = "30px Arial"; ctx.fillText("🔵", o.x, o.y);
+                if(Math.hypot(player.x - o.x, player.y - o.y) < 40) { blueOrbs = Math.min(3, blueOrbs+1); updateStats(); obstacles.splice(i,1); }
             }
-            rainItems.forEach((it, i) => {
-                it.y += it.s + (score/20);
-                if(it.kind === "COIN") { ctx.font = "20px Arial"; ctx.fillText("💰", it.x, it.y); }
-                else if(it.kind === "BOMB") { ctx.font = "20px Arial"; ctx.fillText("💣", it.x, it.y); }
-                else { ctx.font = "20px Arial"; ctx.fillText("❤️", it.x, it.y); }
+            if(o.x < -100) obstacles.splice(i,1);
+        });
 
-                if (Math.hypot(player.x - it.x, player.y - it.y) < 35) {
-                    if (it.kind === "COIN") { coins++; score++; }
-                    else if (it.kind === "BOMB") handleDeath();
-                    else { lives++; }
-                    updateStats(); rainItems.splice(i, 1);
-                }
-            });
-        }
-
-        // Mavi Küreler
-        orbs.forEach((o, i) => {
-            o.x -= speed; ctx.font = "25px Arial"; ctx.fillText("🔵", o.x, o.y);
-            if(Math.hypot(player.x-o.x, player.y-o.y) < 40) { collectedOrbs = Math.min(3, collectedOrbs+1); updateStats(); orbs.splice(i,1); }
+        // DRAW RAINS
+        rains.forEach((r, i) => {
+            r.y += r.vy; ctx.font = "30px Arial"; ctx.fillText(r.kind, r.x, r.y);
+            if(Math.hypot(player.x - r.x, player.y - r.y) < 40) {
+                if(r.kind === "💰") { coins++; score++; }
+                else if(r.kind === "💣") hit();
+                else lives++;
+                updateStats(); rains.splice(i, 1);
+            }
+            if(r.y > canvas.height) rains.splice(i, 1);
         });
 
         frame++;
+        if(invul > 0) invul--; if(isWolf > 0) isWolf--;
+        
         ctx.font = player.size + "px Arial";
         if(invul % 10 > 5) ctx.globalAlpha = 0.3;
-        if(isWolf > 0) { ctx.shadowBlur = 20; ctx.shadowColor = "gold"; }
-        ctx.fillText(player.emoji, player.x, player.y + player.size);
+        if(isWolf > 0) { ctx.shadowBlur = 30; ctx.shadowColor = "gold"; }
+        ctx.fillText(activeEmoji, player.x, player.y + player.size);
         ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     }
     requestAnimationFrame(loop);
 }
 
-// Kontroller
-const jump = (e) => { 
-    if(gameState === "PLAYING") { player.vy = player.jump; } 
+// CONTROLS
+const handleInput = (e) => {
+    if(gameState !== "PLAYING") return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    if(activeMode === "CLASSIC") {
+        player.vy = player.jump;
+    } else {
+        // Smooth horizontal movement in Rain mode
+        player.x = clientX - player.size/2;
+        player.y = canvas.height - 100;
+    }
 };
-window.addEventListener("touchstart", jump);
-window.addEventListener("mousedown", jump);
-// Bozkurt Modu Aktivasyonu (Bara Tıklama)
-document.getElementById("ability-bar-container").onclick = () => {
-    if(collectedOrbs >= 3) { isWolf = 360; collectedOrbs = 0; updateStats(); }
-};
+window.addEventListener("mousedown", handleInput);
+window.addEventListener("touchstart", (e) => { if(e.cancelable) e.preventDefault(); handleInput(e); }, {passive:false});
+window.addEventListener("mousemove", (e) => { if(activeMode === "RAIN") handleInput(e); });
+window.addEventListener("touchmove", (e) => { if(activeMode === "RAIN") handleInput(e); });
 
-function changeName() { let n = prompt("Yeni isim:"); if(n) { myName = n; localStorage.setItem("tb_name", n); } }
+function activateWolf() { if(blueOrbs >= 3) { isWolf = 360; blueOrbs = 0; updateStats(); } }
 
-requestAnimationFrame(loop);
+function loadLB() {
+    db.ref("leaderboard").orderByChild("score").limitToLast(8).on("value", s => {
+        let h = ""; let arr = []; s.forEach(x => arr.push(x.val()));
+        arr.reverse().forEach((p, i) => h += `<div>#${i+1} ${p.name.slice(0,8)}: ${p.score}</div>`);
+        document.getElementById("lb_content").innerHTML = h;
+    });
+}
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.onresize = resize; resize(); loadLB(); requestAnimationFrame(loop);
 </script>
 </body>
 </html>
