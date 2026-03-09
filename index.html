@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>T-BOZKURT: OMNI-VERSE</title>
+    <title>T-BOZKURT: FIXED CONTROLS</title>
     <style>
         :root { --p-color: #3b82f6; --neon: #00f2ff; }
-        body { margin: 0; background: #020617; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; }
-        canvas { display: block; }
+        body { margin: 0; background: #020617; color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none; -webkit-user-select: none; user-select: none; }
+        canvas { display: block; touch-action: none; }
         
         /* UI ELEMENTLERI */
         #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
@@ -15,10 +15,10 @@
         .stat-item { padding: 8px 12px; background: rgba(15, 23, 42, 0.9); border-radius: 15px; border: 1px solid var(--p-color); box-shadow: 0 0 15px var(--p-color); }
         
         #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 6, 23, 0.98); display: flex; flex-direction: column; align-items: center; z-index: 100; pointer-events: auto; padding-top: 30px; overflow-y: auto; }
-        .wallet { font-size: 28px; color: #fbbf24; font-weight: 900; margin-bottom: 20px; text-shadow: 0 0 10px #fbbf24; }
+        .wallet { font-size: 28px; color: #fbbf24; font-weight: 900; margin-bottom: 20px; }
         
         .mode-row { display: flex; gap: 15px; margin-bottom: 20px; }
-        .mode-box { width: 120px; padding: 15px; background: #1e293b; border: 2px solid #334155; border-radius: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
+        .mode-box { width: 110px; padding: 15px; background: #1e293b; border: 2px solid #334155; border-radius: 20px; text-align: center; cursor: pointer; }
         .mode-box.active { border-color: var(--neon); box-shadow: 0 0 20px var(--neon); background: #0f172a; }
 
         .market-grid { width: 90%; max-width: 400px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
@@ -27,11 +27,10 @@
         .buy-btn.owned { background: #475569; }
 
         #leaderboard { width: 90%; max-width: 400px; background: rgba(30, 41, 59, 0.5); border-radius: 20px; padding: 15px; font-size: 12px; margin-bottom: 50px; }
+        .btn-play { padding: 18px 80px; background: linear-gradient(45deg, #1e40af, #3b82f6); border: none; border-radius: 50px; color: white; font-size: 24px; font-weight: 900; cursor: pointer; }
         
-        .btn-play { padding: 18px 80px; background: linear-gradient(45deg, #1e40af, #3b82f6); border: none; border-radius: 50px; color: white; font-size: 24px; font-weight: 900; cursor: pointer; box-shadow: 0 0 30px rgba(59, 130, 246, 0.6); }
-        
-        #ability-bar-container { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 220px; height: 18px; background: rgba(255,255,255,0.1); border-radius: 10px; border: 2px solid #334155; overflow: hidden; pointer-events: auto; }
-        #ability-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #1e40af, var(--neon)); transition: 0.3s; box-shadow: 0 0 10px var(--neon); }
+        #ability-bar-container { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); width: 200px; height: 18px; background: rgba(255,255,255,0.1); border-radius: 10px; border: 2px solid #334155; overflow: hidden; pointer-events: auto; }
+        #ability-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #1e40af, var(--neon)); transition: 0.3s; }
     </style>
 </head>
 <body>
@@ -42,11 +41,11 @@
         <div class="stat-item" style="border-color:#fbbf24;">💰 <span id="curCoins">0</span></div>
         <div class="stat-item" style="border-color:#ef4444;">❤️ <span id="curLives">2</span></div>
     </div>
-    <div id="ability-bar-container" onclick="activateWolf()"><div id="ability-bar"></div></div>
+    <div id="ability-bar-container" onmousedown="activateWolf()" ontouchstart="activateWolf()"><div id="ability-bar"></div></div>
 </div>
 
 <div id="overlay">
-    <h1 style="margin:0; letter-spacing:3px; color:var(--neon); text-shadow:0 0 15px var(--neon);">T-BOZKURT</h1>
+    <h1 style="margin:0; color:var(--neon); text-shadow:0 0 15px var(--neon);">T-BOZKURT</h1>
     <div class="wallet">💰 <span id="totalWallet">0</span></div>
 
     <div class="mode-row">
@@ -64,8 +63,7 @@
     <button class="btn-play" onclick="start()">BAŞLAT</button>
     
     <div id="leaderboard">
-        <div style="text-align:center; color:var(--neon); margin-bottom:10px; font-weight:bold;">LİDERLİK TABLOSU</div>
-        <div id="lb_content">Yükleniyor...</div>
+        <div id="lb_content">Sıralama Yükleniyor...</div>
     </div>
 </div>
 
@@ -75,11 +73,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
 <script>
-// FIREBASE
 const firebaseConfig = { apiKey: "AIzaSyDJ0LSQIv5KDPC-tJwDHdeN6nmzk2JcflM", authDomain: "kaangame-bfea0.firebaseapp.com", databaseURL: "https://kaangame-bfea0-default-rtdb.firebaseio.com", projectId: "kaangame-bfea0", storageBucket: "kaangame-bfea0.firebasestorage.app", messagingSenderId: "889267308539", appId: "1:889267308539:web:4afa1e9705647b0445ad5e" };
 firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-// DATA
 let myWallet = parseInt(localStorage.getItem("tb_coins") || "0");
 let myItems = JSON.parse(localStorage.getItem("tb_owned") || '{"forest":false, "space":false, "eagle":false, "dragon":false}');
 let activeTheme = localStorage.getItem("tb_theme") || "default";
@@ -89,7 +85,7 @@ let playerName = localStorage.getItem("tb_player") || "Bozkurt_" + Math.floor(Ma
 
 const canvas = document.getElementById("game"); const ctx = canvas.getContext("2d");
 let gameState = "MENU", score = 0, coins = 0, lives = 2, frame = 0, invul = 0, blueOrbs = 0, isWolf = 0;
-let obstacles = [], rains = [], fx = [];
+let obstacles = [], rains = [];
 const player = { x: 70, y: 0, vy: 0, gravity: 0.52, jump: -8.2, size: 38 };
 
 function setMode(m) { activeMode = m; document.getElementById("mClassic").className = m==='CLASSIC'?'mode-box active':'mode-box'; document.getElementById("mRain").className = m==='RAIN'?'mode-box active':'mode-box'; }
@@ -121,8 +117,9 @@ refreshUI();
 function start() {
     document.getElementById("overlay").style.display = "none";
     gameState = "PLAYING"; score = 0; coins = 0; lives = 2; frame = 0; invul = 0; blueOrbs = 0; isWolf = 0;
-    obstacles = []; rains = []; player.y = canvas.height/2; player.vy = 0;
-    if(activeMode === "RAIN") player.y = canvas.height - 80;
+    obstacles = []; rains = []; player.vy = 0; player.x = 70;
+    player.y = canvas.height/2;
+    if(activeMode === "RAIN") player.y = canvas.height - 100;
     updateStats();
 }
 
@@ -135,7 +132,7 @@ function updateStats() {
 
 function hit() {
     if(invul > 0 || isWolf > 0) return;
-    lives--; invul = 120; updateStats();
+    lives--; invul = 100; updateStats();
     if(lives <= 0) {
         gameState = "MENU"; myWallet += coins; localStorage.setItem("tb_coins", myWallet);
         db.ref("leaderboard/"+playerName).set({name: playerName, score: score});
@@ -145,8 +142,6 @@ function hit() {
 
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // THEME BG
     if(activeTheme === "forest") ctx.fillStyle = "#064e3b";
     else if(activeTheme === "space") ctx.fillStyle = "#020617";
     else ctx.fillStyle = "#010409";
@@ -154,11 +149,11 @@ function loop() {
 
     if(gameState === "PLAYING") {
         let speed = 5 + (score / 15);
-        
+        if(invul > 0) invul--; if(isWolf > 0) isWolf--;
+
         if(activeMode === "CLASSIC") {
             player.vy += player.gravity; player.y += player.vy;
             if(player.y + player.size > canvas.height || player.y < 0) { if(invul===0) hit(); player.y = player.y < 0 ? 0 : canvas.height - player.size; player.vy = 0; }
-            
             if(frame % 90 === 0) {
                 let gap = 190; let h = Math.random() * (canvas.height - gap - 100) + 50;
                 obstacles.push({x: canvas.width, y: 0, w: 75, h: h, passed: false, type: "PIPE"});
@@ -166,22 +161,17 @@ function loop() {
                 if(Math.random() > 0.7) obstacles.push({x: canvas.width + 110, y: h + (gap/2), type: "ORB"});
             }
         } else {
-            // RAIN MODE - Gravity off, follow touch/mouse
             if(frame % 40 === 0) {
                 let r = Math.random();
                 rains.push({x: Math.random()*(canvas.width-40), y: -50, vy: 5+(score/10), kind: r<0.6 ? "💰" : (r<0.85 ? "💣" : "❤️")});
             }
         }
 
-        // DRAW OBSTACLES (CLASSIC)
         obstacles.forEach((o, i) => {
             o.x -= speed;
             if(o.type === "PIPE") {
                 ctx.fillStyle = (isWolf > 0 || invul > 0) ? "rgba(0, 242, 255, 0.2)" : "#1e293b";
-                ctx.strokeStyle = var(--neon); ctx.lineWidth = 3;
-                ctx.shadowBlur = 15; ctx.shadowColor = var(--neon);
-                ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.fillRect(o.x, o.y, o.w, o.h);
-                ctx.shadowBlur = 0;
+                ctx.strokeStyle = "#00f2ff"; ctx.lineWidth = 3; ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.fillRect(o.x, o.y, o.w, o.h);
                 if(invul === 0 && isWolf === 0 && player.x < o.x + o.w && player.x + player.size > o.x && player.y < o.y + o.h && player.y + player.size > o.y) hit();
                 if(o.y === 0 && !o.passed && o.x + o.w < player.x) { score++; coins++; o.passed = true; updateStats(); if(score%35===0) lives++; }
             } else {
@@ -191,7 +181,6 @@ function loop() {
             if(o.x < -100) obstacles.splice(i,1);
         });
 
-        // DRAW RAINS
         rains.forEach((r, i) => {
             r.y += r.vy; ctx.font = "30px Arial"; ctx.fillText(r.kind, r.x, r.y);
             if(Math.hypot(player.x - r.x, player.y - r.y) < 40) {
@@ -204,8 +193,6 @@ function loop() {
         });
 
         frame++;
-        if(invul > 0) invul--; if(isWolf > 0) isWolf--;
-        
         ctx.font = player.size + "px Arial";
         if(invul % 10 > 5) ctx.globalAlpha = 0.3;
         if(isWolf > 0) { ctx.shadowBlur = 30; ctx.shadowColor = "gold"; }
@@ -215,37 +202,28 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
-// CONTROLS
-const handleInput = (e) => {
-    if(gameState !== "PLAYING") return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    
-    if(activeMode === "CLASSIC") {
-        player.vy = player.jump;
-    } else {
-        // Smooth horizontal movement in Rain mode
-        player.x = clientX - player.size/2;
-        player.y = canvas.height - 100;
+// --- KONTROL SISTEMI ---
+const jump = (e) => { 
+    if(gameState === "PLAYING" && activeMode === "CLASSIC") player.vy = player.jump; 
+};
+
+const move = (e) => {
+    if(gameState === "PLAYING" && activeMode === "RAIN") {
+        const x = e.touches ? e.touches[0].clientX : e.clientX;
+        player.x = x - player.size/2;
     }
 };
-window.addEventListener("mousedown", handleInput);
-window.addEventListener("touchstart", (e) => { if(e.cancelable) e.preventDefault(); handleInput(e); }, {passive:false});
-window.addEventListener("mousemove", (e) => { if(activeMode === "RAIN") handleInput(e); });
-window.addEventListener("touchmove", (e) => { if(activeMode === "RAIN") handleInput(e); });
+
+// Event Listeners
+window.addEventListener("mousedown", jump);
+window.addEventListener("touchstart", (e) => { jump(); move(e); }, {passive: false});
+window.addEventListener("mousemove", move);
+window.addEventListener("touchmove", (e) => { move(e); e.preventDefault(); }, {passive: false});
+window.addEventListener("keydown", (e) => { if(e.code === "Space") jump(); });
 
 function activateWolf() { if(blueOrbs >= 3) { isWolf = 360; blueOrbs = 0; updateStats(); } }
-
-function loadLB() {
-    db.ref("leaderboard").orderByChild("score").limitToLast(8).on("value", s => {
-        let h = ""; let arr = []; s.forEach(x => arr.push(x.val()));
-        arr.reverse().forEach((p, i) => h += `<div>#${i+1} ${p.name.slice(0,8)}: ${p.score}</div>`);
-        document.getElementById("lb_content").innerHTML = h;
-    });
-}
-
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-window.onresize = resize; resize(); loadLB(); requestAnimationFrame(loop);
+window.onresize = resize; resize(); requestAnimationFrame(loop);
 </script>
 </body>
 </html>
