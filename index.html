@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>T-BOZKURT X-PRO MAX+</title>
+    <style>
+        :root { --p-color: #3b82f6; --bg-color: #020617; }
+        body { margin: 0; background: var(--bg-color); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: manipulation; transition: background 1.5s; }
+        canvas { display: block; }
+        #ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        #stats { position: absolute; top: 15px; width: 100%; display: flex; justify-content: space-around; font-size: 18px; font-weight: 900; }
+        .stat-item { padding: 8px 12px; background: rgba(15, 23, 42, 0.85); border-radius: 15px; border: 1px solid var(--p-color); box-shadow: 0 0 10px var(--p-color); }
+        
+        /* Yetenek Barı Tıklanabilir */
+        #ability-bar-container { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 220px; height: 25px; background: rgba(255,255,255,0.1); border-radius: 20px; border: 2px solid #334155; overflow: hidden; pointer-events: auto; cursor: pointer; }
+        #ability-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #1e40af, #3b82f6); box-shadow: 0 0 15px #3b82f6; transition: width 0.4s; position: relative; }
+        #ability-text { position: absolute; width: 100%; text-align: center; line-height: 25px; font-size: 12px; font-weight: bold; color: white; text-shadow: 1px 1px 2px black; }
+
+        #leaderboard-box { position: absolute; right: 10px; top: 85px; background: rgba(15, 23, 42, 0.95); padding: 12px; border-radius: 12px; width: 130px; border: 1px solid var(--p-color); font-size: 11px; pointer-events: auto; }
+        .my-best { margin-top: 8px; padding-top: 8px; border-top: 1px solid #334155; color: #10b981; font-weight: bold; text-align: center; }
+
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #020617; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; pointer-events: auto; }
+        .char-select { display: flex; gap: 10px; margin: 20px 0; }
+        .char-box { width: 55px; height: 55px; border: 2px solid #1e293b; border-radius: 12px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 26px; background: #0f172a; transition: 0.2s; }
+        .char-box.active { border-color: var(--p-color); box-shadow: 0 0 20px var(--p-color); transform: scale(1.1); }
+        .btn-start { padding: 15px 50px; background: var(--p-color); border: none; border-radius: 50px; color: white; font-size: 22px; font-weight: 900; cursor: pointer; box-shadow: 0 0 25px rgba(59, 130, 246, 0.5); }
+        .edit-btn { font-size: 12px; color: #60a5fa; text-decoration: underline; cursor: pointer; margin-top: 10px; display: block; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <div id="stats">
+        <div class="stat-item">🏆 <span id="curScore">0</span></div>
+        <div class="stat-item" style="border-color:#ef4444;">❤️ <span id="curLives">2</span></div>
+    </div>
+    
+    <div id="ability-bar-container" onclick="activateWolfMode()">
+        <div id="ability-bar"><div id="ability-text">GÜÇ TOPLANIYOR...</div></div>
+    </div>
+
+    <div id="leaderboard-box">
+        <div style="text-align:center; color:var(--p-color); font-weight:bold; margin-bottom:5px;">SIRALAMA</div>
+        <div id="scores">...</div>
+        <div class="my-best">REKOR: <span id="myHighScore">0</span></div>
+    </div>
+</div>
+
+<div id="overlay">
+    <h1 style="color:white; font-size: 32px; margin: 0; text-shadow: 0 0 15px #3b82f6;">T-BOZKURT MAX+</h1>
+    <div style="font-size: 14px; color: #94a3b8; margin-top: 10px;">Hoş Geldin, <b id="welcomeUser" style="color:white;"></b></div>
+    <span class="edit-btn" id="nameTrigger">⚙️ İsmi Değiştir (Hak: <span id="nameRights"></span>)</span>
+    <div class="char-select">
+        <div class="char-box active" data-color="#3b82f6" data-emoji="🐺">🐺</div>
+        <div class="char-box" data-color="#a855f7" data-emoji="🔮">🔮</div>
+        <div class="char-box" data-color="#22c55e" data-emoji="🍀">🍀</div>
+        <div class="char-box" data-color="#f59e0b" data-emoji="🟦">🟦</div>
+    </div>
+    <button class="btn-start" id="mainStartBtn">BAŞLAT</button>
+</div>
+
+<canvas id="game"></canvas>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+const firebaseConfig = { apiKey: "AIzaSyDJ0LSQIv5KDPC-tJwDHdeN6nmzk2JcflM", authDomain: "kaangame-bfea0.firebaseapp.com", databaseURL: "https://kaangame-bfea0-default-rtdb.firebaseio.com", projectId: "kaangame-bfea0", storageBucket: "kaangame-bfea0.firebasestorage.app", messagingSenderId: "889267308539", appId: "1:889267308539:web:4afa1e9705647b0445ad5e" };
+firebase.initializeApp(firebaseConfig); const db = firebase.database();
+
+let oyuncuAdi = localStorage.getItem("t_bozkurt_user") || "";
+let nameRights = parseInt(localStorage.getItem("t_bozkurt_rights") || "2");
+let myBest = parseInt(localStorage.getItem("t_bozkurt_best") || "0");
+
+const canvas = document.getElementById("game"); const ctx = canvas.getContext("2d");
+let gameState = "MENU", score = 0, lives = 2, obstacles = [], frame = 0, shake = 0, invul = 0;
+let playerColor = "#3b82f6", playerEmoji = "🐺", collectedOrbs = 0, isWolfMode = 0;
+let orbs = [], comboText = "", comboTimer = 0;
+
+const player = { x: 70, y: 0, vy: 0, gravity: 0.52, jump: -8.2, size: 35 };
+
+function initApp() {
+    if(!oyuncuAdi) { oyuncuAdi = prompt("Lakabın?", "Bozkurt"); if(!oyuncuAdi) oyuncuAdi = "User"+Math.floor(Math.random()*999); localStorage.setItem("t_bozkurt_user", oyuncuAdi); }
+    document.getElementById("welcomeUser").innerText = oyuncuAdi;
+    document.getElementById("nameRights").innerText = nameRights;
+    document.getElementById("myHighScore").innerText = myBest;
+}
+initApp();
+
+document.getElementById("nameTrigger").onclick = () => {
+    if(nameRights > 0) { let n = prompt("Yeni isim:", oyuncuAdi); if(n){oyuncuAdi=n.substring(0,10); nameRights--; localStorage.setItem("t_bozkurt_user", oyuncuAdi); localStorage.setItem("t_bozkurt_rights", nameRights); initApp();} }
+};
+
+document.querySelectorAll('.char-box').forEach(box => {
+    box.onclick = () => {
+        document.querySelectorAll('.char-box').forEach(b=>b.classList.remove('active'));
+        box.classList.add('active'); playerColor = box.dataset.color; playerEmoji = box.dataset.emoji;
+        document.documentElement.style.setProperty('--p-color', playerColor);
+    };
+});
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; player.y = canvas.height/2; }
+window.onresize = resize; resize();
+
+function launch() {
+    document.getElementById("overlay").style.display = "none";
+    gameState = "PLAYING"; score = 0; lives = 2; obstacles = []; orbs = []; frame = 0; collectedOrbs = 0; isWolfMode = 0;
+    player.y = canvas.height/2; player.vy = 0; updateUI();
+}
+document.getElementById("mainStartBtn").onclick = launch;
+
+function activateWolfMode() {
+    if(collectedOrbs >= 3 && isWolfMode === 0) {
+        isWolfMode = 360; // Yaklaşık 6 saniye
+        collectedOrbs = 0;
+        updateUI();
+    }
+}
+
+function updateUI() {
+    document.getElementById("curScore").innerText = score;
+    document.getElementById("curLives").innerText = lives;
+    
+    let barWidth = (collectedOrbs / 3) * 100;
+    document.getElementById("ability-bar").style.width = barWidth + "%";
+    
+    let txt = document.getElementById("ability-text");
+    if(isWolfMode > 0) {
+        txt.innerText = "BOZKURT AKTİF!";
+        document.getElementById("ability-bar").style.background = "#fbbf24";
+    } else if(collectedOrbs >= 3) {
+        txt.innerText = "BAS VE AÇ!";
+        document.getElementById("ability-bar").style.background = "#22c55e";
+    } else {
+        txt.innerText = "KÜRE TOPLA (" + collectedOrbs + "/3)";
+        document.getElementById("ability-bar").style.background = "linear-gradient(90deg, #1e40af, #3b82f6)";
+    }
+
+    if(score > myBest) { myBest = score; localStorage.setItem("t_bozkurt_best", myBest); document.getElementById("myHighScore").innerText = myBest; }
+    
+    if(score < 30) document.body.style.background = "#020617";
+    else if(score < 70) document.body.style.background = "#1e1b4b";
+    else document.body.style.background = "#450a0a";
+}
+
+function handleHit() {
+    if(isWolfMode > 0) return;
+    lives--; shake = 15; invul = 60; updateUI();
+    if(lives <= 0) {
+        gameState = "MENU";
+        db.ref("leaderboard/"+oyuncuAdi).once("value", s => { if(!s.exists() || s.val().score < score) db.ref("leaderboard/"+oyuncuAdi).set({name:oyuncuAdi, score:score}); });
+        document.getElementById("overlay").style.display = "flex";
+    } else { player.y = canvas.height/2; player.vy = 0; obstacles = []; orbs = []; }
+}
+
+function loop() {
+    ctx.clearRect(0,0, canvas.width, canvas.height);
+    if(gameState === "PLAYING") {
+        if(shake > 0) { ctx.translate(Math.random()*shake-shake/2, Math.random()*shake-shake/2); shake *= 0.9; }
+        
+        let curSpeed = 5 + (Math.floor(score/5)*0.45);
+        player.vy += player.gravity; player.y += player.vy;
+        if(invul > 0) invul--; if(isWolfMode > 0) isWolfMode--;
+
+        if(player.y + player.size > canvas.height || player.y < 0) handleHit();
+
+        if(frame % 95 === 0) {
+            let gap = Math.max(150, 220 - (score*1.4));
+            let h = Math.random()*(canvas.height-gap-120)+60;
+            obstacles.push({x:canvas.width, y:0, w:70, h:h, p:false});
+            obstacles.push({x:canvas.width, y:h+gap, w:70, h:canvas.height});
+            // Küreler artık boşluğun üst kısmında (h + gap*0.2) çıkıyor
+            if(Math.random() > 0.6) orbs.push({x:canvas.width+100, y:h+(gap*0.2), s:15, collected:false});
+        }
+        frame++;
+
+        orbs.forEach((o, i) => {
+            o.x -= curSpeed; 
+            ctx.fillStyle = "#3b82f6"; ctx.shadowBlur = 15; ctx.shadowColor = "#3b82f6";
+            ctx.beginPath(); ctx.arc(o.x, o.y, o.s, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur = 0;
+            if(!o.collected && Math.hypot(player.x-o.x, player.y-o.y) < 40) { 
+                o.collected = true; collectedOrbs = Math.min(3, collectedOrbs+1); updateUI(); orbs.splice(i,1); 
+            }
+        });
+
+        for(let i=obstacles.length-1; i>=0; i--) {
+            let o = obstacles[i]; o.x -= curSpeed;
+            ctx.fillStyle = isWolfMode > 0 ? "rgba(59,130,246,0.2)" : "#0f172a";
+            ctx.strokeStyle = playerColor; ctx.lineWidth = 3; ctx.strokeRect(o.x, o.y, o.w, o.h); ctx.fillRect(o.x, o.y, o.w, o.h);
+
+            if(invul === 0 && isWolfMode === 0 && player.x < o.x+o.w && player.x+player.size > o.x && player.y < o.y+o.h && player.y+player.size > o.y) { handleHit(); break; }
+            
+            if(o.y === 0 && !o.p && o.x+o.w < player.x) {
+                let distTop = Math.abs(player.y - o.h);
+                let distBot = Math.abs((player.y+player.size) - (obstacles[i+1]?obstacles[i+1].y:999));
+                if(distTop < 15 || distBot < 15) { score += 2; comboText = "+2 YAKIN GEÇİŞ!"; comboTimer = 50; } else { score++; }
+                o.p = true; updateUI();
+                if(score % 35 === 0) { lives++; updateUI(); }
+            }
+            if(o.x < -100) obstacles.splice(i,1);
+        }
+
+        if(comboTimer > 0) { ctx.fillStyle = "#fbbf24"; ctx.font = "bold 24px Arial"; ctx.fillText(comboText, player.x, player.y - 20); comboTimer--; }
+
+        ctx.font = player.size + "px Arial";
+        if(isWolfMode > 0) { ctx.shadowBlur = 30; ctx.shadowColor = "#fbbf24"; }
+        if(invul % 10 > 5) ctx.globalAlpha = 0.3;
+        ctx.fillText(playerEmoji, player.x, player.y+player.size);
+        ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    }
+    ctx.setTransform(1,0,0,1,0,0);
+    requestAnimationFrame(loop);
+}
+
+const jump = (e) => { 
+    if(gameState === "PLAYING") { 
+        // Eğer tıklanan yer yetenek barı değilse zıpla
+        if(e.target.id !== "ability-bar-container" && e.target.id !== "ability-bar" && e.target.id !== "ability-text") {
+            if(e.cancelable) e.preventDefault(); 
+            player.vy = player.jump; 
+        }
+    } 
+};
+window.addEventListener("touchstart", jump, {passive:false});
+window.addEventListener("mousedown", jump);
+
+function loadLB() {
+    db.ref("leaderboard").orderByChild("score").limitToLast(10).on("value", snap => {
+        let arr = []; snap.forEach(c => arr.push(c.val())); arr.sort((a,b)=>b.score-a.score);
+        let h = ""; arr.forEach((s,i) => h += `<div class="${i===0?'top-score':''}">#${i+1} ${s.name.slice(0,7)}: ${s.score}</div>`);
+        document.getElementById("scores").innerHTML = h || "Yok";
+    });
+}
+loadLB(); loop();
+</script>
+</body>
+</html>
