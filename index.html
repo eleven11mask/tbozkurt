@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T-BOZKURT AI</title>
+
+<title>T-BOZKURT NEON</title>
 
 <style>
 
@@ -17,79 +18,107 @@ color:white;
 
 canvas{display:block}
 
-#ui{
-position:absolute;
-top:0;
-width:100%;
-text-align:center;
-}
-
-#stats{
-display:flex;
-justify-content:space-around;
-margin-top:10px;
-}
-
-.stat{
-background:#0f172a;
-padding:6px 10px;
-border-radius:10px;
-}
-
 #overlay{
+
 position:absolute;
 width:100%;
 height:100%;
+
 background:#020617ee;
+
 display:flex;
 flex-direction:column;
 align-items:center;
+
 padding-top:30px;
+
 }
 
 #leaderboard{
+
 background:#0f172a;
 padding:15px;
 border-radius:15px;
 margin-top:20px;
 width:260px;
-text-align:left;
+
 }
 
-#ability-bar-container{
+#chars button{
+
+font-size:26px;
+margin:5px;
+padding:10px;
+border-radius:10px;
+border:none;
+cursor:pointer;
+
+}
+
+#wolf-button{
+
 position:absolute;
 bottom:20px;
 left:50%;
 transform:translateX(-50%);
-width:200px;
-height:16px;
-background:#111;
-border-radius:10px;
-border:2px solid #334155;
+
+width:220px;
+height:40px;
+
+background:#020617;
+border:2px solid #00f2ff;
+border-radius:20px;
+
+text-align:center;
+line-height:20px;
+
 }
 
-#ability-bar{
-height:100%;
+#wolf-bar{
+
+height:6px;
 width:0%;
-background:linear-gradient(90deg,#1e40af,#00f2ff);
+background:#00f2ff;
+
+}
+
+#stats{
+
+position:absolute;
+top:10px;
+width:100%;
+
+display:flex;
+justify-content:space-around;
+
+}
+
+.stat{
+
+background:#0f172a;
+padding:6px 10px;
+border-radius:10px;
+
 }
 
 </style>
+
 </head>
 
 <body>
 
-<div id="ui">
-
 <div id="stats">
+
 <div class="stat">🏆 <span id="curScore">0</span></div>
 <div class="stat">💰 <span id="curCoins">0</span></div>
 <div class="stat">❤️ <span id="curLives">2</span></div>
+
 </div>
 
-<div id="ability-bar-container" onclick="activateWolf()">
-<div id="ability-bar"></div>
-</div>
+<div id="wolf-button" onclick="activateWolf()">
+
+🐺 BOZKURT MOD
+<div id="wolf-bar"></div>
 
 </div>
 
@@ -99,10 +128,25 @@ background:linear-gradient(90deg,#1e40af,#00f2ff);
 
 <div id="myBest">Benim Rekorum: 0</div>
 
+<h3>Karakter Seç</h3>
+
+<div id="chars">
+
+<button onclick="selectChar('wolf')">🐺</button>
+<button onclick="selectChar('dragon')">🐉</button>
+<button onclick="selectChar('mage')">🧙</button>
+<button onclick="selectChar('robot')">🤖</button>
+
+</div>
+
+<br>
+
 <button onclick="start()">BAŞLAT</button>
 
 <div id="leaderboard">
-<div id="lb_content">Leaderboard yükleniyor...</div>
+
+<div id="lb_content">yükleniyor...</div>
+
 </div>
 
 </div>
@@ -115,38 +159,48 @@ background:linear-gradient(90deg,#1e40af,#00f2ff);
 <script>
 
 const firebaseConfig={
+
 apiKey:"AIzaSyDJ0LSQIv5KDPC",
 authDomain:"kaangame-bfea0.firebaseapp.com",
 databaseURL:"https://kaangame-bfea0-default-rtdb.firebaseio.com",
 projectId:"kaangame-bfea0"
+
 }
 
 firebase.initializeApp(firebaseConfig)
+
 const db=firebase.database()
 
 let playerName=localStorage.getItem("tb_player")||("Bozkurt_"+Math.floor(Math.random()*999))
 
-/* GAME DATA STRUCTURE */
+let currentChar=localStorage.getItem("tb_char")||"wolf"
 
-let gameData={
-player:{
-bestScore:0,
-coins:0,
-character:"wolf"
-},
-inventory:{
-characters:["wolf"],
-themes:["default"]
+function selectChar(c){
+
+currentChar=c
+localStorage.setItem("tb_char",c)
+
 }
+
+const chars={
+
+wolf:"🐺",
+dragon:"🐉",
+mage:"🧙",
+robot:"🤖"
+
 }
 
 const canvas=document.getElementById("game")
 const ctx=canvas.getContext("2d")
 
 function resize(){
+
 canvas.width=window.innerWidth
 canvas.height=window.innerHeight
+
 }
+
 resize()
 window.onresize=resize
 
@@ -156,25 +210,23 @@ let coins=0
 let lives=2
 let frame=0
 
-/* AI DIFFICULTY */
-
 let difficulty={
+
 speed:5,
 gap:190,
 spawnRate:90
+
 }
 
 function updateDifficulty(){
 
 difficulty.speed=5+(score*0.12)
 
-if(score>50) difficulty.gap=170
-if(score>100) difficulty.gap=150
-if(score>150) difficulty.spawnRate=70
+if(score>50)difficulty.gap=170
+if(score>100)difficulty.gap=150
+if(score>150)difficulty.spawnRate=70
 
 }
-
-/* PARTICLE ENGINE */
 
 class Particle{
 
@@ -185,36 +237,46 @@ this.y=y
 this.life=50
 
 if(type==="coin"){
+
 this.vx=(Math.random()-0.5)*3
 this.vy=(Math.random()-0.5)*3
 this.color="gold"
+
 }
 
 if(type==="hit"){
+
 this.vx=(Math.random()-0.5)*6
 this.vy=(Math.random()-0.5)*6
 this.color="red"
+
 }
 
 if(type==="orb"){
+
 this.vx=(Math.random()-0.5)*4
 this.vy=(Math.random()-0.5)*4
 this.color="cyan"
+
 }
 
 }
 
 update(){
+
 this.x+=this.vx
 this.y+=this.vy
 this.life--
+
 }
 
 draw(){
+
 ctx.globalAlpha=this.life/50
 ctx.fillStyle=this.color
 ctx.fillRect(this.x,this.y,4,4)
 ctx.globalAlpha=1
+
 }
 
 }
@@ -223,21 +285,20 @@ let particles=[]
 
 function spawnParticles(x,y,type){
 
-for(let i=0;i<10;i++){
+for(let i=0;i<10;i++)
 particles.push(new Particle(x,y,type))
-}
 
 }
-
-/* PLAYER */
 
 const player={
+
 x:70,
 y:200,
 vy:0,
 gravity:0.5,
 jump:-8,
 size:38
+
 }
 
 let obstacles=[]
@@ -248,10 +309,12 @@ let invul=0
 function start(){
 
 state="PLAY"
+
 score=0
 coins=0
 lives=2
 frame=0
+
 obstacles=[]
 
 document.getElementById("overlay").style.display="none"
@@ -261,8 +324,10 @@ document.getElementById("overlay").style.display="none"
 function activateWolf(){
 
 if(blueOrbs>=3){
+
 wolf=360
 blueOrbs=0
+
 }
 
 }
@@ -279,14 +344,14 @@ spawnParticles(player.x,player.y,"hit")
 if(lives<=0){
 
 saveScore()
+
 state="MENU"
+
 document.getElementById("overlay").style.display="flex"
 
 }
 
 }
-
-/* LEADERBOARD */
 
 function saveScore(){
 
@@ -294,9 +359,8 @@ const ref=db.ref("leaderboard/"+playerName)
 
 ref.once("value",snap=>{
 
-if(!snap.exists()||score>snap.val().score){
+if(!snap.exists()||score>snap.val().score)
 ref.set({name:playerName,score:score})
-}
 
 })
 
@@ -322,10 +386,10 @@ let html="<b>🏆 EN İYİ 3</b><br><br>"
 data.forEach((p,i)=>{
 
 let medal="🥇"
-if(i==1) medal="🥈"
-if(i==2) medal="🥉"
+if(i==1)medal="🥈"
+if(i==2)medal="🥉"
 
-html+=`${medal} ${p.name} — ${p.score}<br>`
+html+=medal+" "+p.name+" — "+p.score+"<br>"
 
 })
 
@@ -337,24 +401,31 @@ lb.innerHTML=html
 
 function loadMyBest(){
 
-const ref=db.ref("leaderboard/"+playerName)
+db.ref("leaderboard/"+playerName)
+.on("value",snap=>{
 
-ref.on("value",snap=>{
-if(snap.exists()){
+if(snap.exists())
 document.getElementById("myBest").innerText="Benim Rekorum: "+snap.val().score
-}
+
 })
 
 }
 
-/* LOOP */
+function drawNeonWall(x,y,w,h){
+
+ctx.shadowBlur=20
+ctx.shadowColor="#00f2ff"
+
+ctx.fillStyle="#0ea5e9"
+ctx.fillRect(x,y,w,h)
+
+ctx.shadowBlur=0
+
+}
 
 function loop(){
 
 ctx.clearRect(0,0,canvas.width,canvas.height)
-
-ctx.fillStyle="#010409"
-ctx.fillRect(0,0,canvas.width,canvas.height)
 
 if(state==="PLAY"){
 
@@ -398,17 +469,16 @@ obstacles.splice(i,1)
 
 else{
 
-ctx.fillStyle="#1e293b"
-ctx.fillRect(o.x,o.y,o.w,o.h)
+drawNeonWall(o.x,o.y,o.w,o.h)
 
-if(player.x<o.x+o.w&&player.x+player.size>o.x&&player.y<o.y+o.h&&player.y+player.size>o.y){
+if(player.x<o.x+o.w&&player.x+player.size>o.x&&player.y<o.y+o.h&&player.y+player.size>o.y)
 hit()
-}
 
 if(!o.passed&&o.x+o.w<player.x){
 
 score++
 coins++
+
 o.passed=true
 
 spawnParticles(o.x,player.y,"coin")
@@ -427,8 +497,6 @@ if(o.x<-100)obstacles.splice(i,1)
 
 }
 
-/* PARTICLES */
-
 particles.forEach((p,i)=>{
 
 p.update()
@@ -439,7 +507,7 @@ if(p.life<=0)particles.splice(i,1)
 })
 
 ctx.font=player.size+"px Arial"
-ctx.fillText("🐺",player.x,player.y+player.size)
+ctx.fillText(chars[currentChar],player.x,player.y+player.size)
 
 frame++
 
@@ -452,7 +520,8 @@ function updateStats(){
 document.getElementById("curScore").innerText=score
 document.getElementById("curCoins").innerText=coins
 document.getElementById("curLives").innerText=lives
-document.getElementById("ability-bar").style.width=(blueOrbs/3*100)+"%"
+
+document.getElementById("wolf-bar").style.width=(blueOrbs/3*100)+"%"
 
 }
 
