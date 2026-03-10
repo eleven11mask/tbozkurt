@@ -3,38 +3,58 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>T-BOZKURT PRO</title>
+<title>T-BOZKURT AI</title>
 
 <style>
-:root{--neon:#00f2ff;--blue:#3b82f6;}
-body{margin:0;background:#020617;color:white;font-family:Arial;overflow:hidden}
+
+body{
+margin:0;
+overflow:hidden;
+background:#020617;
+font-family:Arial;
+color:white;
+}
+
 canvas{display:block}
 
-#ui{position:absolute;width:100%;top:0;left:0;pointer-events:none}
-#stats{display:flex;justify-content:space-around;margin-top:10px;font-weight:bold}
-.stat{background:#0f172a;padding:8px 12px;border-radius:12px;border:1px solid var(--blue)}
+#ui{
+position:absolute;
+top:0;
+width:100%;
+text-align:center;
+}
+
+#stats{
+display:flex;
+justify-content:space-around;
+margin-top:10px;
+}
+
+.stat{
+background:#0f172a;
+padding:6px 10px;
+border-radius:10px;
+}
 
 #overlay{
-position:absolute;width:100%;height:100%;
+position:absolute;
+width:100%;
+height:100%;
 background:#020617ee;
 display:flex;
 flex-direction:column;
 align-items:center;
-overflow:auto;
-padding-top:30px
+padding-top:30px;
 }
 
-.mode-row{display:flex;gap:10px;margin-bottom:20px}
-.mode-box{background:#1e293b;padding:10px 15px;border-radius:12px;border:2px solid #334155;cursor:pointer}
-.mode-box.active{border-color:var(--neon);box-shadow:0 0 10px var(--neon)}
-
-.market-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:300px}
-.item-card{background:#0f172a;border-radius:10px;padding:10px;text-align:center}
-.buy-btn{margin-top:5px;width:100%;padding:6px;border:none;border-radius:8px;background:#3b82f6;color:white}
-
-.btn-play{margin-top:20px;padding:15px 60px;font-size:22px;border:none;border-radius:30px;background:linear-gradient(45deg,#1e40af,#3b82f6);color:white}
-
-#leaderboard{width:300px;background:#0f172a;margin-top:20px;padding:10px;border-radius:15px}
+#leaderboard{
+background:#0f172a;
+padding:15px;
+border-radius:15px;
+margin-top:20px;
+width:260px;
+text-align:left;
+}
 
 #ability-bar-container{
 position:absolute;
@@ -42,11 +62,10 @@ bottom:20px;
 left:50%;
 transform:translateX(-50%);
 width:200px;
-height:18px;
-border-radius:10px;
+height:16px;
 background:#111;
+border-radius:10px;
 border:2px solid #334155;
-pointer-events:auto;
 }
 
 #ability-bar{
@@ -54,12 +73,14 @@ height:100%;
 width:0%;
 background:linear-gradient(90deg,#1e40af,#00f2ff);
 }
+
 </style>
 </head>
 
 <body>
 
 <div id="ui">
+
 <div id="stats">
 <div class="stat">🏆 <span id="curScore">0</span></div>
 <div class="stat">💰 <span id="curCoins">0</span></div>
@@ -69,26 +90,16 @@ background:linear-gradient(90deg,#1e40af,#00f2ff);
 <div id="ability-bar-container" onclick="activateWolf()">
 <div id="ability-bar"></div>
 </div>
+
 </div>
 
 <div id="overlay">
-<h1 style="color:#00f2ff">T-BOZKURT</h1>
 
-<div>💰 <span id="totalWallet">0</span></div>
+<h1>T-BOZKURT</h1>
 
-<div class="mode-row">
-<div class="mode-box active" id="mClassic" onclick="setMode('CLASSIC')">🐺 KLASİK</div>
-<div class="mode-box" id="mRain" onclick="setMode('RAIN')">🌧️ YAĞMUR</div>
-</div>
+<div id="myBest">Benim Rekorum: 0</div>
 
-<div class="market-grid">
-<div class="item-card">🌲 Orman<button class="buy-btn" onclick="shop('forest',200)">200</button></div>
-<div class="item-card">🚀 Uzay<button class="buy-btn" onclick="shop('space',400)">400</button></div>
-<div class="item-card">🦅 Kartal<button class="buy-btn" onclick="shop('eagle',600)">600</button></div>
-<div class="item-card">🐉 Ejderha<button class="buy-btn" onclick="shop('dragon',1000)">1000</button></div>
-</div>
-
-<button class="btn-play" onclick="start()">BAŞLAT</button>
+<button onclick="start()">BAŞLAT</button>
 
 <div id="leaderboard">
 <div id="lb_content">Leaderboard yükleniyor...</div>
@@ -108,35 +119,117 @@ apiKey:"AIzaSyDJ0LSQIv5KDPC",
 authDomain:"kaangame-bfea0.firebaseapp.com",
 databaseURL:"https://kaangame-bfea0-default-rtdb.firebaseio.com",
 projectId:"kaangame-bfea0"
-};
+}
 
-firebase.initializeApp(firebaseConfig);
-const db=firebase.database();
+firebase.initializeApp(firebaseConfig)
+const db=firebase.database()
 
-let wallet=parseInt(localStorage.getItem("tb_coins")||"0");
-let owned=JSON.parse(localStorage.getItem("tb_owned")||"{}");
+let playerName=localStorage.getItem("tb_player")||("Bozkurt_"+Math.floor(Math.random()*999))
 
-let theme="default";
-let emoji="🐺";
-let mode="CLASSIC";
+/* GAME DATA STRUCTURE */
 
-let playerName=localStorage.getItem("tb_player")||("Bozkurt_"+Math.floor(Math.random()*999));
+let gameData={
+player:{
+bestScore:0,
+coins:0,
+character:"wolf"
+},
+inventory:{
+characters:["wolf"],
+themes:["default"]
+}
+}
 
-const canvas=document.getElementById("game");
-const ctx=canvas.getContext("2d");
+const canvas=document.getElementById("game")
+const ctx=canvas.getContext("2d")
 
-let state="MENU";
-let score=0;
-let coins=0;
-let lives=2;
-let frame=0;
+function resize(){
+canvas.width=window.innerWidth
+canvas.height=window.innerHeight
+}
+resize()
+window.onresize=resize
 
-let invul=0;
-let wolf=0;
-let blueOrbs=0;
+let state="MENU"
+let score=0
+let coins=0
+let lives=2
+let frame=0
 
-let obstacles=[];
-let rains=[];
+/* AI DIFFICULTY */
+
+let difficulty={
+speed:5,
+gap:190,
+spawnRate:90
+}
+
+function updateDifficulty(){
+
+difficulty.speed=5+(score*0.12)
+
+if(score>50) difficulty.gap=170
+if(score>100) difficulty.gap=150
+if(score>150) difficulty.spawnRate=70
+
+}
+
+/* PARTICLE ENGINE */
+
+class Particle{
+
+constructor(x,y,type){
+
+this.x=x
+this.y=y
+this.life=50
+
+if(type==="coin"){
+this.vx=(Math.random()-0.5)*3
+this.vy=(Math.random()-0.5)*3
+this.color="gold"
+}
+
+if(type==="hit"){
+this.vx=(Math.random()-0.5)*6
+this.vy=(Math.random()-0.5)*6
+this.color="red"
+}
+
+if(type==="orb"){
+this.vx=(Math.random()-0.5)*4
+this.vy=(Math.random()-0.5)*4
+this.color="cyan"
+}
+
+}
+
+update(){
+this.x+=this.vx
+this.y+=this.vy
+this.life--
+}
+
+draw(){
+ctx.globalAlpha=this.life/50
+ctx.fillStyle=this.color
+ctx.fillRect(this.x,this.y,4,4)
+ctx.globalAlpha=1
+}
+
+}
+
+let particles=[]
+
+function spawnParticles(x,y,type){
+
+for(let i=0;i<10;i++){
+particles.push(new Particle(x,y,type))
+}
+
+}
+
+/* PLAYER */
 
 const player={
 x:70,
@@ -145,272 +238,231 @@ vy:0,
 gravity:0.5,
 jump:-8,
 size:38
-};
-
-function resize(){
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
-}
-window.onresize=resize;
-resize();
-
-function setMode(m){
-mode=m;
-document.getElementById("mClassic").classList.toggle("active",m==="CLASSIC");
-document.getElementById("mRain").classList.toggle("active",m==="RAIN");
 }
 
-function shop(id,price){
-if(owned[id]){
-if(id==="eagle")emoji="🦅";
-if(id==="dragon")emoji="🐉";
-if(id==="forest")theme="forest";
-if(id==="space")theme="space";
-return;
-}
-
-if(wallet>=price){
-wallet-=price;
-owned[id]=true;
-localStorage.setItem("tb_coins",wallet);
-localStorage.setItem("tb_owned",JSON.stringify(owned));
-}
-}
+let obstacles=[]
+let blueOrbs=0
+let wolf=0
+let invul=0
 
 function start(){
-state="PLAY";
-score=0;
-coins=0;
-lives=2;
-frame=0;
-obstacles=[];
-rains=[];
-player.y=canvas.height/2;
-document.getElementById("overlay").style.display="none";
+
+state="PLAY"
+score=0
+coins=0
+lives=2
+frame=0
+obstacles=[]
+
+document.getElementById("overlay").style.display="none"
+
+}
+
+function activateWolf(){
+
+if(blueOrbs>=3){
+wolf=360
+blueOrbs=0
+}
+
 }
 
 function hit(){
 
-if(invul>0||wolf>0)return;
+if(invul>0||wolf>0)return
 
-lives--;
-invul=80;
+lives--
+invul=80
+
+spawnParticles(player.x,player.y,"hit")
 
 if(lives<=0){
 
-state="MENU";
+saveScore()
+state="MENU"
+document.getElementById("overlay").style.display="flex"
 
-wallet+=coins;
-localStorage.setItem("tb_coins",wallet);
-
-saveScore();
-
-document.getElementById("overlay").style.display="flex";
 }
+
 }
+
+/* LEADERBOARD */
 
 function saveScore(){
 
-const ref=db.ref("leaderboard/"+playerName);
+const ref=db.ref("leaderboard/"+playerName)
 
 ref.once("value",snap=>{
 
 if(!snap.exists()||score>snap.val().score){
-ref.set({
-name:playerName,
-score:score
-});
+ref.set({name:playerName,score:score})
 }
 
-});
+})
 
 }
 
 function loadLeaderboard(){
 
-const lb=document.getElementById("lb_content");
+const lb=document.getElementById("lb_content")
 
 db.ref("leaderboard")
 .orderByChild("score")
-.limitToLast(10)
+.limitToLast(3)
 .on("value",snap=>{
 
-let data=[];
+let data=[]
 
-snap.forEach(c=>{
-data.push(c.val());
-});
+snap.forEach(c=>data.push(c.val()))
 
-data.sort((a,b)=>b.score-a.score);
+data.sort((a,b)=>b.score-a.score)
 
-let html="<b>🏆 EN İYİ 10</b><br>";
+let html="<b>🏆 EN İYİ 3</b><br><br>"
 
 data.forEach((p,i)=>{
-html+=`${i+1}. ${p.name} — ${p.score}<br>`;
-});
 
-lb.innerHTML=html;
+let medal="🥇"
+if(i==1) medal="🥈"
+if(i==2) medal="🥉"
 
-});
+html+=`${medal} ${p.name} — ${p.score}<br>`
+
+})
+
+lb.innerHTML=html
+
+})
 
 }
 
-function activateWolf(){
-if(blueOrbs>=3){
-wolf=360;
-blueOrbs=0;
+function loadMyBest(){
+
+const ref=db.ref("leaderboard/"+playerName)
+
+ref.on("value",snap=>{
+if(snap.exists()){
+document.getElementById("myBest").innerText="Benim Rekorum: "+snap.val().score
 }
+})
+
 }
 
-function updateStats(){
-
-document.getElementById("curScore").innerText=score;
-document.getElementById("curCoins").innerText=coins;
-document.getElementById("curLives").innerText=lives;
-
-document.getElementById("ability-bar").style.width=(blueOrbs/3*100)+"%";
-}
+/* LOOP */
 
 function loop(){
 
-ctx.clearRect(0,0,canvas.width,canvas.height);
+ctx.clearRect(0,0,canvas.width,canvas.height)
 
-if(theme==="forest")ctx.fillStyle="#064e3b";
-else if(theme==="space")ctx.fillStyle="#020617";
-else ctx.fillStyle="#010409";
-
-ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle="#010409"
+ctx.fillRect(0,0,canvas.width,canvas.height)
 
 if(state==="PLAY"){
 
-let speed=5+(score/15);
+updateDifficulty()
 
-if(invul>0)invul--;
-if(wolf>0)wolf--;
+let speed=difficulty.speed
 
-if(mode==="CLASSIC"){
+player.vy+=player.gravity
+player.y+=player.vy
 
-player.vy+=player.gravity;
-player.y+=player.vy;
+if(frame%difficulty.spawnRate===0){
 
-if(frame%90===0){
+let h=Math.random()*(canvas.height-difficulty.gap-100)+50
 
-let gap=190;
-let h=Math.random()*(canvas.height-gap-100)+50;
-
-obstacles.push({x:canvas.width,y:0,w:70,h:h,passed:false});
-obstacles.push({x:canvas.width,y:h+gap,w:70,h:canvas.height});
+obstacles.push({x:canvas.width,y:0,w:70,h:h,passed:false})
+obstacles.push({x:canvas.width,y:h+difficulty.gap,w:70,h:canvas.height})
 
 if(Math.random()>0.7)
-obstacles.push({x:canvas.width+110,y:h+(gap/2),orb:true});
-
-}
-
-}
-
-else{
-
-if(frame%40===0){
-
-let r=Math.random();
-
-rains.push({
-x:Math.random()*(canvas.width-40),
-y:-40,
-vy:5,
-kind:r<0.6?"💰":(r<0.85?"💣":"❤️")
-});
-
-}
+obstacles.push({x:canvas.width+100,y:h+difficulty.gap/2,orb:true})
 
 }
 
 obstacles.forEach((o,i)=>{
 
-o.x-=speed;
+o.x-=speed
 
 if(o.orb){
 
-ctx.font="28px Arial";
-ctx.fillText("🔵",o.x,o.y);
+ctx.font="28px Arial"
+ctx.fillText("🔵",o.x,o.y)
 
 if(Math.hypot(player.x-o.x,player.y-o.y)<40){
-blueOrbs=Math.min(3,blueOrbs+1);
-obstacles.splice(i,1);
+
+blueOrbs=Math.min(3,blueOrbs+1)
+spawnParticles(o.x,o.y,"orb")
+obstacles.splice(i,1)
+
 }
 
 }
 
 else{
 
-ctx.fillStyle="#1e293b";
-ctx.fillRect(o.x,o.y,o.w,o.h);
+ctx.fillStyle="#1e293b"
+ctx.fillRect(o.x,o.y,o.w,o.h)
 
 if(player.x<o.x+o.w&&player.x+player.size>o.x&&player.y<o.y+o.h&&player.y+player.size>o.y){
-hit();
+hit()
 }
 
 if(!o.passed&&o.x+o.w<player.x){
-score++;
-coins++;
-o.passed=true;
 
-if(score%35===0)lives++;
+score++
+coins++
+o.passed=true
 
-updateStats();
-}
+spawnParticles(o.x,player.y,"coin")
 
-}
+if(score%35===0)lives++
 
-if(o.x<-100)obstacles.splice(i,1);
-
-});
-
-rains.forEach((r,i)=>{
-
-r.y+=r.vy;
-
-ctx.font="28px Arial";
-ctx.fillText(r.kind,r.x,r.y);
-
-if(Math.hypot(player.x-r.x,player.y-r.y)<40){
-
-if(r.kind==="💰"){coins++;score++;}
-if(r.kind==="💣")hit();
-if(r.kind==="❤️")lives++;
-
-rains.splice(i,1);
-
-updateStats();
+updateStats()
 
 }
 
-});
+}
 
-frame++;
+if(o.x<-100)obstacles.splice(i,1)
 
-ctx.font=player.size+"px Arial";
-ctx.fillText(emoji,player.x,player.y+player.size);
+})
 
 }
 
-requestAnimationFrame(loop);
+/* PARTICLES */
+
+particles.forEach((p,i)=>{
+
+p.update()
+p.draw()
+
+if(p.life<=0)particles.splice(i,1)
+
+})
+
+ctx.font=player.size+"px Arial"
+ctx.fillText("🐺",player.x,player.y+player.size)
+
+frame++
+
+requestAnimationFrame(loop)
 
 }
 
-window.addEventListener("mousedown",()=>{if(mode==="CLASSIC")player.vy=player.jump});
-window.addEventListener("touchstart",()=>{if(mode==="CLASSIC")player.vy=player.jump});
+function updateStats(){
 
-window.addEventListener("mousemove",(e)=>{
-if(mode==="RAIN")player.x=e.clientX;
-});
+document.getElementById("curScore").innerText=score
+document.getElementById("curCoins").innerText=coins
+document.getElementById("curLives").innerText=lives
+document.getElementById("ability-bar").style.width=(blueOrbs/3*100)+"%"
 
-window.addEventListener("touchmove",(e)=>{
-if(mode==="RAIN")player.x=e.touches[0].clientX;
-});
+}
 
-loadLeaderboard();
-loop();
+window.addEventListener("mousedown",()=>player.vy=player.jump)
+window.addEventListener("touchstart",()=>player.vy=player.jump)
+
+loadLeaderboard()
+loadMyBest()
+
+loop()
 
 </script>
 
